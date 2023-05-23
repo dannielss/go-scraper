@@ -1,13 +1,14 @@
 package main
 
 import (
-	"fmt"
+	"encoding/csv"
+	"log"
+	"os"
 
 	"github.com/gocolly/colly"
 )
 
 type PokemonStruct struct {
-	url,
 	image,
 	name,
 	price string
@@ -16,17 +17,47 @@ type PokemonStruct struct {
 func main() {
 	var pokemons []PokemonStruct;
 
-	c := colly.NewCollector() 
- 
-	c.Visit("https://scrapeme.live/shop/")
+	file, err := os.Create("pokemons.csv")
 
-	c.OnHTML("nav", func (e *colly.HTMLElement) {
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer file.Close() 
+
+	writer := csv.NewWriter(file)
+
+	headers := []string{
+		"name",
+		"image",
+		"price",
+	}
+
+	writer.Write(headers)
+
+	c := colly.NewCollector() 
+
+	c.OnHTML("li.product", func (e *colly.HTMLElement) {
 		pokemon := PokemonStruct{}
 
-		pokemon.name = e.ChildText("span")
+		pokemon.name = e.ChildText("h2");
+		pokemon.image = e.ChildAttr("img", "src")
+		pokemon.price = e.ChildText(".price")
 
 		pokemons = append(pokemons, pokemon)
 	})
 
-	fmt.Printf("%v", pokemons)
+	c.Visit("https://scrapeme.live/shop/")
+
+	for _, pokemon := range pokemons {
+		record := []string{
+			pokemon.name,
+			pokemon.image,
+			pokemon.price,
+		}
+
+		writer.Write(record)
+	}
+
+	defer writer.Flush()
 }
