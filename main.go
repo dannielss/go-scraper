@@ -17,6 +17,20 @@ type PokemonStruct struct {
 func main() {
 	var pokemons []PokemonStruct;
 
+	c := colly.NewCollector() 
+
+	c.OnHTML("li.product", func (e *colly.HTMLElement) {
+		pokemon := PokemonStruct{}
+
+		pokemon.name = e.ChildText("h2");
+		pokemon.image = e.ChildAttr("img", "src")
+		pokemon.price = e.ChildText(".price")
+
+		pokemons = append(pokemons, pokemon)
+	})
+
+	c.Visit("https://scrapeme.live/shop/")
+
 	file, err := os.Create("pokemons.csv")
 
 	if err != nil {
@@ -34,20 +48,6 @@ func main() {
 	}
 
 	writer.Write(headers)
-
-	c := colly.NewCollector() 
-
-	c.OnHTML("li.product", func (e *colly.HTMLElement) {
-		pokemon := PokemonStruct{}
-
-		pokemon.name = e.ChildText("h2");
-		pokemon.image = e.ChildAttr("img", "src")
-		pokemon.price = e.ChildText(".price")
-
-		pokemons = append(pokemons, pokemon)
-	})
-
-	c.Visit("https://scrapeme.live/shop/")
 
 	for _, pokemon := range pokemons {
 		record := []string{
